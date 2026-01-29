@@ -2,74 +2,73 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>Фото з камери</title>
+  <title>Фото на сервер</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background: #111;
+      background: #cccccc;
       color: white;
       text-align: center;
-      font-family: Arial, sans-serif;
+      font-family: Arial;
     }
-
     video, canvas {
       width: 100%;
-      max-width: 100%;
     }
-
     button {
-      margin: 15px;
+      margin: 10px;
       padding: 15px 30px;
       font-size: 18px;
-      border: none;
       border-radius: 10px;
-      background: #00aaff;
-      color: white;
+      border: none;
     }
   </style>
 </head>
 <body>
 
-  <h2>Камера</h2>
+<h2>Камера</h2>
 
-  <!-- Відео з камери -->
-  <video id="video" autoplay playsinline></video>
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
-  <!-- Кнопка -->
-  <button id="capture">📸 Зробити фото</button>
+<button id="photo">📸 Зробити фото</button>
+<button id="send">⬆️ Зберегти на сервер</button>
 
-  <!-- Фото -->
-  <canvas id="canvas"></canvas>
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 
-  <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const button = document.getElementById('capture');
-    const context = canvas.getContext('2d');
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: "environment" },
+  audio: false
+})
+.then(stream => video.srcObject = stream);
 
-    // Запуск камери
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" }, // основна камера
-      audio: false
-    })
-    .then(stream => {
-      video.srcObject = stream;
-    })
-    .catch(err => {
-      alert("Не вдалося отримати доступ до камери");
-      console.error(err);
-    });
+document.getElementById('photo').onclick = () => {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0);
+  alert("Фото зроблено");
+};
 
-    // Зробити фото
-    button.addEventListener('click', () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
-    });
-  </script>
+document.getElementById('send').onclick = async () => {
+  const blob = await new Promise(resolve =>
+    canvas.toBlob(resolve, 'image/jpeg')
+  );
+
+  const formData = new FormData();
+  formData.append('photo', blob);
+
+  const res = await fetch('/upload', {
+    method: 'POST',
+    body: formData
+  });
+
+  const text = await res.text();
+  alert(text);
+};
+</script>
 
 </body>
 </html>
